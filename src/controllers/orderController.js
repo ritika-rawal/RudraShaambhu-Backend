@@ -3,6 +3,8 @@ import { Cart } from "../models/Cart.js";
 import { Order } from "../models/Order.js";
 import { Product } from "../models/Product.js";
 
+const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || "admin@gmail.com").toLowerCase();
+
 function isObjectId(value) {
   return mongoose.Types.ObjectId.isValid(value);
 }
@@ -77,10 +79,24 @@ export async function createOrder(req, res) {
       items.reduce((sum, entry) => sum + entry.price * entry.quantity, 0).toFixed(2)
     );
 
+    const normalizedShipping = shipping
+      ? {
+          fullName: String(shipping.fullName || "").trim(),
+          phone: String(shipping.phone || "").trim(),
+          addressLine1: String(shipping.addressLine1 || "").trim(),
+          addressLine2: String(shipping.addressLine2 || "").trim(),
+          city: String(shipping.city || "").trim(),
+          state: String(shipping.state || "").trim(),
+          postalCode: String(shipping.postalCode || "").trim(),
+          country: String(shipping.country || "").trim()
+        }
+      : undefined;
+
     const order = await Order.create({
       userId,
       items,
       totalAmount,
+      shipping: normalizedShipping,
       shippingAddress: finalShippingAddress,
       status: "pending"
     });
@@ -105,5 +121,26 @@ export async function getOrdersByUser(req, res) {
     return res.json({ orders });
   } catch (error) {
     return res.status(500).json({ message: "failed to load orders", error: error.message });
+  }
+}
+
+export async function getAllOrdersForAdmin(req, res) {
+  const adminEmail = String(req.query.adminEmail || req.headers["x-admin-email"] || "")
+    .trim()
+    .toLowerCase();
+
+  if (!adminEmail || adminEmail !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: "admin access denied" });
+  }
+
+  try {
+    const orders = await Order.find({})
+      .sort({ createdAt: -1 })
+      .populate({ path: "userId", select: "name email image provider createdAt" })
+      .populate({ path: "items.productId", select: "name mukhi price" });
+
+    return res.json({ orders });
+  } catch (error) {
+    return res.status(500).json({ message: "failed to load admin orders", error: error.message });
   }
 }

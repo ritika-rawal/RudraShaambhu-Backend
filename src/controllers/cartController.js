@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Cart } from "../models/Cart.js";
 import { Product } from "../models/Product.js";
+import { User } from "../models/User.js";
 
 function isObjectId(value) {
   return mongoose.Types.ObjectId.isValid(value);
@@ -8,9 +9,23 @@ function isObjectId(value) {
 
 async function getOrCreateCart(userId) {
   let cart = await Cart.findOne({ userId });
+  const user = await User.findById(userId).select("name email provider");
+
+  const userSnapshot = {
+    name: user?.name || "",
+    email: user?.email || "",
+    provider: user?.provider || ""
+  };
 
   if (!cart) {
-    cart = await Cart.create({ userId, items: [] });
+    cart = await Cart.create({ userId, userSnapshot, items: [] });
+  } else if (
+    cart.userSnapshot?.name !== userSnapshot.name ||
+    cart.userSnapshot?.email !== userSnapshot.email ||
+    cart.userSnapshot?.provider !== userSnapshot.provider
+  ) {
+    cart.userSnapshot = userSnapshot;
+    await cart.save();
   }
 
   return cart;
@@ -46,6 +61,7 @@ async function toCartResponse(cart) {
 
   return {
     userId: cart.userId,
+    user: cart.userSnapshot,
     items,
     totalAmount
   };
@@ -84,11 +100,18 @@ export async function addToCart(req, res) {
 
     const cart = await getOrCreateCart(userId);
     const existing = cart.items.find((entry) => String(entry.productId) === productId);
+    const productSnapshot = {
+      name: product.name,
+      mukhi: String(product.mukhi),
+      price: product.price,
+      image: product.image || ""
+    };
 
     if (existing) {
       existing.quantity += quantity;
+      existing.productSnapshot = productSnapshot;
     } else {
-      cart.items.push({ productId, quantity });
+      cart.items.push({ productId, quantity, productSnapshot });
     }
 
     await cart.save();

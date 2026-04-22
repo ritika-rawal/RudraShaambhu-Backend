@@ -14,6 +14,16 @@ const orderSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User", index: true },
     items: { type: [orderItemSchema], required: true },
     totalAmount: { type: Number, required: true, min: 0 },
+    shipping: {
+      fullName: { type: String, trim: true, default: "" },
+      phone: { type: String, trim: true, default: "" },
+      addressLine1: { type: String, trim: true, default: "" },
+      addressLine2: { type: String, trim: true, default: "" },
+      city: { type: String, trim: true, default: "" },
+      state: { type: String, trim: true, default: "" },
+      postalCode: { type: String, trim: true, default: "" },
+      country: { type: String, trim: true, default: "" }
+    },
     shippingAddress: { type: String, required: true, trim: true },
     status: { type: String, enum: ["pending", "completed"], default: "pending" }
   },

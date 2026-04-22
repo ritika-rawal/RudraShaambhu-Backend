@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { getProductById, getProducts } from "../controllers/productController.js";
+import { getProductById, getProducts, updateProductPriceForAdmin } from "../controllers/productController.js";
 
 const router = Router();
 
 router.get("/", getProducts);
+router.patch("/admin/price", updateProductPriceForAdmin);
 router.get("/:productId", getProductById);
 
 export default router;

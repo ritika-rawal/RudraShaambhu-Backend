@@ -14,9 +14,23 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
-const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 
-app.use(cors({ origin: frontendOrigin, credentials: true }));
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://rudra-shaambhu-frontend.vercel.app"
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
